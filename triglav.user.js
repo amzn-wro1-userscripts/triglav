@@ -7,8 +7,8 @@
 // @match        *://fcresearch-eu.aka.amazon.com/*/results?s=*
 // @icon         https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Symbol_of_Veles.svg/800px-Symbol_of_Veles.svg.png
 // @grant        GM.xmlHttpRequest
-// @updateURL    https://github.com/amzn-wro1-userscripts/triglav/raw/main/triglav.user.js
-// @downloadURL  https://github.com/amzn-wro1-userscripts/triglav/raw/main/triglav.user.js
+// @updateURL    https://amazon.eitho.fun/triglav.user.js
+// @downloadURL  https://amazon.eitho.fun/triglav.user.js
 // ==/UserScript==
 
 
