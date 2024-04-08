@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Triglav
 // @namespace    http://tampermonkey.net/
-// @version      1.12.2
+// @version      1.12.3
 // @description  ♿️♿️♿️
 // @author       wojnarkw, edited by xdaaugus and sitarsk
 // @match        *://fcresearch-eu.aka.amazon.com/*/results?s=*
@@ -15,12 +15,17 @@
 /*
 Release notes:
 1.12.0 - 2023.03.08 - xdaaugus
-- added caching for the remove data - decreased loading time
-- changed style of the remove data <span> element to ensure that employee will notice FBA item type
+ - added caching for the remove data - decreased loading time
+ - changed style of the remove data <span> element to ensure that employee will notice FBA item type
+
 1.12.1 - 2023.06.01 - xdaaugus
-- fixed bug with gravis
+ - fixed bug with gravis
+
 1.12.2 - 2023.10.11 - sitarsk
  - TBD, this is Sparta!
+
+1.12.3 - 2024.04.08 - xdaaugus
+ - added container total price row
 */
 
 ;
@@ -118,6 +123,11 @@ Release notes:
             }
         }
     }
+	function round(value, precision = 2) {
+		var multiplier = Math.pow(10, precision || 0);
+		const ret = (Math.round(value * multiplier) / multiplier).toFixed(precision);
+		return isNaN(ret) ? false : ret;
+	}
     //================Enqueued XHR requests==============
     const MAX_CONNECTIONS = 50;
     let currentRequests = 0;
@@ -1324,12 +1334,23 @@ Release notes:
             const total = document.createElement('span');
             const inventorySummary = document.getElementById('table-inventory_info').innerText.match(/\s[0-9]*\s/g).map(el => el.trim())
             total.innerText = inventorySummary[2];
+
+			const priceSummaryRow = document.createElement('tr');
+			const priceSummaryHeader = document.createElement('td');
+			priceSummaryHeader.innerText = 'TOTAL PRICE:';
+			const priceSummary = document.createElement('td');
+			let priceSum = 0;
+			priceSummary.innerText = 'EUR ...';
+			priceSummaryRow.appendChild(priceSummaryHeader);
+			priceSummaryRow.appendChild(priceSummary);
+
             itemsCategoryTable.appendChild(summaryRow);
             summary.appendChild(loadedSum);
             summary.appendChild(slash);
             summary.appendChild(total);
             summaryRow.appendChild(summary);
             summaryRow.style.borderTop = '2px solid black';
+			itemsCategoryTable.appendChild(priceSummaryRow);
             triglavLog.appendChild(itemsCategory);
             const dimensionalCategoriesMap = new Map(dimensionalCategories);
             [
@@ -1424,6 +1445,9 @@ Release notes:
                         ).nextElementSibling;
                         const price = priceRow.innerText.trim();
                         priceSpan.innerText = price;
+					//	console.log('price', price, Number(price.replace('EUR ', '')), priceSum, priceSum + Number(price.replace('EUR ', '')));
+						priceSum += price ? Number(price.replace('EUR ', '').replace(',','')) : 0;
+						priceSummary.innerText = 'EUR ' + round(priceSum, 2);
                         if (!price) {
                             const amazonSiteUrl = inventoryRow.getElementsByTagName('td')[11].getElementsByTagName('a')[0].getAttribute('href');
                             enqueuedXHR({
