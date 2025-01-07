@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Triglav
 // @namespace    http://tampermonkey.net/
-// @version      1.12.4
+// @version      1.12.3
 // @description  ♿️♿️♿️
 // @author       wojnarkw, edited by xdaaugus and sitarsk
 // @match        *://fcresearch-eu.aka.amazon.com/*/results?s=*
@@ -26,10 +26,6 @@ Release notes:
 
 1.12.3 - 2024.04.08 - xdaaugus
  - added container total price row
-
-1.12.4 - 2025.01.07 - xdaaugus
-  - move and sort buttons are automatically hidden when you scan container into the input
-  - move items tries 5 times to complete the action before giving up
 */
 
 ;
@@ -813,75 +809,6 @@ Release notes:
                     const numbersArray = fullNumber.split('.');
                     return numbersArray[0] + '.' + numbersArray[1];
                 })(GM_info.script.version);
-				const moveToInput = document.getElementById('movetoinput');
-				moveToInput.addEventListener('keyup', function(event) {
-					if (event.key !== 'Enter') return;
-					const visibleButton = document.querySelector('#moveto a[style="margin: 5px; display: inline;"]')?.innerText;
-					if (visibleButton === 'move!') moveButton.click();
-					else if (visibleButton === 'sort!') sortButton.click();
-				});
-				let moveItemErrorsCount = 0;
-				async function moveItem(oldContainer, itemBarcode, targetContainer) {
-					return new Promise(async (resolve, reject) => {
-						document.getElementById('moveto').innerHTML = '<div>Processing...</div>';
-						await action(moveObjectToken, 'MoveItems', 'SelectMode', 'SelectMode');
-						console.log(await status(moveObjectToken, 'MoveItems'));
-						await action(moveObjectToken, 'MoveItems', 'Input', 'EACH');
-						await status(moveObjectToken, 'MoveItems');
-						await end(moveObjectToken, 'MoveItems', 'moveitems');
-						await (new Promise(res=>{
-							GM.xmlHttpRequest({
-								method: 'GET',
-								url: 'http://aft-qt-eu.aka.amazon.com/app/moveitems?experience=Desktop',
-								onload: function(resp) {
-									const workspace = document.createElement('div');
-									workspace.innerHTML = resp.responseText;
-									const aboutDiv = Array.from(workspace.getElementsByTagName('div')).find(
-										elem=>elem.getAttribute('id')==='about'
-									);
-									moveObjectToken = aboutDiv.getElementsByTagName('tr')[2].getElementsByTagName('td')[0].innerText;
-									res();
-								}
-							});
-						}));
-						await action(moveObjectToken, 'MoveItems', 'Input', oldContainer);
-						await status(moveObjectToken, 'MoveItems');
-						await action(moveObjectToken, 'MoveItems', 'Input', itemBarcode);
-						await status(moveObjectToken, 'MoveItems');
-						await action(moveObjectToken, 'MoveItems', 'Input', targetContainer);
-						const lastStatus = await status(moveObjectToken, 'MoveItems')
-						if (lastStatus === "READY") {
-							await action(moveObjectToken, 'MoveItems', 'Confirm', 'Confirm');
-							await status(moveObjectToken, 'MoveItems');
-						}
-						GM.xmlHttpRequest({
-							method: 'GET',
-							url: 'http://fcresearch-eu.aka.amazon.com/WRO1/results/inventory?s=' + itemBarcode,
-							onload: async function(response){
-								const workspace = document.createElement('div');
-								workspace.innerHTML = response.responseText;
-								const entries = Array.from(workspace.getElementsByTagName('tbody')[1].getElementsByTagName('tr'));
-								const container = entries[0].getElementsByTagName('td')[0].innerText;
-								if (container === targetContainer) {
-									document.getElementById('moveto').innerHTML = 'DONE! REFRESHING...' + ' "' + container + '"';
-									moveItemErrorsCount = 0;
-									resolve();
-									location.reload();
-								} else {
-									moveItemErrorsCount++;
-									document.getElementById('moveto').innerHTML = `FAILED! RETRYING... (${moveItemErrorsCount}/3)`;
-									if (moveItemErrorsCount < 5) {
-										await new Promise(res=>setTimeout(res, 600));
-										moveItem(oldContainer, itemBarcode, targetContainer);
-									} else {
-										document.getElementById('moveto').innerHTML = 'FAILED 5 TIMES.';
-										reject();
-									}
-								}
-							}
-						});
-					});
-				}
                 moveButton.addEventListener('click', async ()=>{
                     if (localStorage.getItem('logged') !== minorVersion) {
                         GM.xmlHttpRequest({
@@ -896,9 +823,55 @@ Release notes:
                         localStorage.setItem('logged', minorVersion);
                     }
                     const newContainer = document.getElementById('movetoinput').value
-					moveItem(itemContainer, searchSubject, newContainer).catch(error => alert(`Nie udało się przenieść przedmiotu ${searchSubject} do pojemnika ${newContainer}.`));
+                    document.getElementById('moveto').innerHTML = '<div>Processing...</div>';
+                    await action(moveObjectToken, 'MoveItems', 'SelectMode', 'SelectMode');
+                    console.log(await status(moveObjectToken, 'MoveItems'));
+                    await action(moveObjectToken, 'MoveItems', 'Input', 'EACH');
+                    await status(moveObjectToken, 'MoveItems');
+                    await end(moveObjectToken, 'MoveItems', 'moveitems');
+                    await (new Promise(res=>{
+                        GM.xmlHttpRequest({
+                            method: 'GET',
+                            url: 'http://aft-qt-eu.aka.amazon.com/app/moveitems?experience=Desktop',
+                            onload: function(resp) {
+                                const workspace = document.createElement('div');
+                                workspace.innerHTML = resp.responseText;
+                                const aboutDiv = Array.from(workspace.getElementsByTagName('div')).find(
+                                    elem=>elem.getAttribute('id')==='about'
+                                );
+                                moveObjectToken = aboutDiv.getElementsByTagName('tr')[2].getElementsByTagName('td')[0].innerText;
+                                res();
+                            }
+                        });
+                    }));
+                    await action(moveObjectToken, 'MoveItems', 'Input', itemContainer);
+                    await status(moveObjectToken, 'MoveItems');
+                    await action(moveObjectToken, 'MoveItems', 'Input', searchSubject);
+                    await status(moveObjectToken, 'MoveItems');
+                    await action(moveObjectToken, 'MoveItems', 'Input', newContainer);
+                    const lastStatus = await status(moveObjectToken, 'MoveItems')
+                    if (lastStatus === "READY") {
+                        await action(moveObjectToken, 'MoveItems', 'Confirm', 'Confirm');
+                        await status(moveObjectToken, 'MoveItems');
+                    }
+                    GM.xmlHttpRequest({
+                        method: 'GET',
+                        url: 'http://fcresearch-eu.aka.amazon.com/WRO1/results/inventory?s=' + searchSubject,
+                        onload: function(response){
+                            const workspace = document.createElement('div');
+                            workspace.innerHTML = response.responseText;
+                            const entries = Array.from(workspace.getElementsByTagName('tbody')[1].getElementsByTagName('tr'));
+                            const container = entries[0].getElementsByTagName('td')[0].innerText;
+                            let time = 5000;
+                            if (container === newContainer) {
+                                document.getElementById('moveto').innerHTML = 'DONE! REFRESHING...' + ' "' + container + '"';
+                                location.reload();
+                            } else {
+                                document.getElementById('moveto').innerHTML = 'FAILED!';
+                            }
+                        }
+                    });
                 });
-				
 
 				function fillRemoveData(forceHttpRequest) {
 					if (forceHttpRequest) {
