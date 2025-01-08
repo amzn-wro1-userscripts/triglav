@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Triglav
 // @namespace    http://tampermonkey.net/
-// @version      1.12.4
+// @version      1.12.5
 // @description  ♿️♿️♿️
 // @author       wojnarkw, edited by xdaaugus and sitarsk
 // @match        *://fcresearch-eu.aka.amazon.com/*/results?s=*
@@ -28,8 +28,11 @@ Release notes:
  - added container total price row
 
 1.12.4 - 2025.01.07 - xdaaugus
-  - move and sort buttons are automatically hidden when you scan container into the input
-  - move items tries 5 times to complete the action before giving up
+ - move and sort buttons are automatically hidden when you scan container into the input
+ - move items tries 5 times to complete the action before giving up
+
+1.12.5 - 2025.01.08 - xdaaugus
+ - included new sorting code - AWEOLSorting
 */
 
 ;
@@ -755,7 +758,8 @@ Release notes:
             //============Triglav LPN details templates==========
             triglavContent.getElementsByTagName('tbody')[0].insertAdjacentHTML(
                 'afterbegin',
-                '<tr id="destinationwhdrow" style="display: none"><th>Destination WHD</th><td id="destinationwhd"></td></tr>' +
+				'<tr id="destinationwhdrow_wdsorting" style="display: none"><th>Destination WHD WDSorting</th><td id="destinationwhd_wdsorting"></td></tr>' +
+                '<tr id="destinationwhdrow_aweolsorting" style="display: none"><th>Destination WHD AWEOLSorting</th><td id="destinationwhd_aweolsorting"></td></tr>' +
                 '<tr id="destinationcretrow" style="display: none"><th>Destination CRET</th><td id="destinationcret"></td></tr>' +
                 '<tr id="currentcontainerrow"><th>Current container</th><td id="currcontainer"></td></tr>' +
                 '<tr id="removerow"><th>Remove data</th><td id="removedata"></td></tr>' +
@@ -1024,11 +1028,25 @@ Release notes:
                     onload: function(response){
                         console.log(response);
                         const destinationWHD = JSON.parse(response.responseText).sortCode;
-                        document.getElementById('destinationwhd').innerText = destinationWHD;
-                        document.getElementById('destinationwhdrow').style.display = '';
+                        document.getElementById('destinationwhd_wdsorting').innerText = destinationWHD;
+                        document.getElementById('destinationwhdrow_wdsorting').style.display = '';
                         if (destinationWHD == 'NULL NULL') {
-                            document.getElementById('destinationwhd').style.background = '#f00';
+                            document.getElementById('destinationwhd_wdsorting').style.background = '#f00';
                             //document.getElementById('removerow').style.display = 'none'; // FIXME (iog==null)
+                        }
+                    }
+                });
+                GM.xmlHttpRequest({
+                    method: 'GET',
+                    url: 'https://de-creturns-web.aka.amazon.com/Sort/getSortCode?sortType=AWEOLSorting&sourceContainer=' +
+                    itemContainer + '&itemBarcode=' + searchSubject + '&warehouseId=' + fulfillmentCenter,
+                    onload: function(response){
+                        console.log(response);
+                        const destinationWHD = JSON.parse(response.responseText).sortCode;
+                        document.getElementById('destinationwhd_aweolsorting').innerText = destinationWHD;
+                        document.getElementById('destinationwhdrow_aweolsorting').style.display = '';
+                        if (destinationWHD == 'NULL NULL') {
+                            document.getElementById('destinationwhd_aweolsorting').style.background = '#f00';
                         }
                     }
                 });
