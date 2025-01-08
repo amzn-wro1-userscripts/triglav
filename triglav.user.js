@@ -28,7 +28,7 @@ Release notes:
  - added container total price row
 
 1.12.4 - 2025.01.07 - xdaaugus
- - move and sort buttons are automatically hidden when you scan container into the input
+ - move and sort buttons are automatically clicked when you scan container into the input
  - move items tries 5 times to complete the action before giving up
 
 1.12.5 - 2025.01.08 - xdaaugus
