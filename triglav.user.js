@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Triglav
 // @namespace    http://tampermonkey.net/
-// @version      1.12.5
+// @version      1.12.6
 // @description  ♿️♿️♿️
 // @author       wojnarkw, edited by xdaaugus and sitarsk
 // @match        *://fcresearch-eu.aka.amazon.com/*/results?s=*
@@ -33,6 +33,9 @@ Release notes:
 
 1.12.5 - 2025.01.08 - xdaaugus
  - included new sorting code - AWEOLSorting
+
+1.12.6 - 2025.04.11 - xdaaugus
+- added container total weight row
 */
 
 ;
@@ -1388,6 +1391,16 @@ Release notes:
 			priceSummary.innerText = 'EUR ...';
 			priceSummaryRow.appendChild(priceSummaryHeader);
 			priceSummaryRow.appendChild(priceSummary);
+			
+			const weightSummaryRow = document.createElement('tr');
+			const weightSummaryHeader = document.createElement('td');
+			weightSummaryHeader.innerText = 'TOTAL WEIGHT:';
+			const weightSummary = document.createElement('td');
+			let weightSum = 0;
+			let weightErrors = 0;
+			weightSummary.innerText = '...';
+			weightSummaryRow.appendChild(weightSummaryHeader);
+			weightSummaryRow.appendChild(weightSummary);
 
             itemsCategoryTable.appendChild(summaryRow);
             summary.appendChild(loadedSum);
@@ -1396,6 +1409,7 @@ Release notes:
             summaryRow.appendChild(summary);
             summaryRow.style.borderTop = '2px solid black';
 			itemsCategoryTable.appendChild(priceSummaryRow);
+            itemsCategoryTable.appendChild(weightSummaryRow);
             triglavLog.appendChild(itemsCategory);
             const dimensionalCategoriesMap = new Map(dimensionalCategories);
             [
@@ -1506,6 +1520,17 @@ Release notes:
                                 }
                             })
                         }
+						const weightRow = productTableHeaders.find(
+							thElem => thElem.innerText === 'Waga'
+						).nextElementSibling;
+						const weightUnparsed = weightRow.innerText.trim();
+						const weight = weightUnparsed && weightUnparsed != '' ? parseFloat(weightUnparsed.split(' ')[0]) : false;
+						if (weight === false) {
+							weightErrors++;
+						}
+						weightSum += weight ? weight : 0;
+						const weightSumReadable = round(weightSum, 2);
+						weightSummary.innerText = weightErrors > 0 ? `${weightSumReadable} kg (${weightErrors} errors)` : `${weightSumReadable} kg`;
                     }
                 });
                 enqueuedXHR({
