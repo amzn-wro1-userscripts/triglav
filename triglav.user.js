@@ -1388,6 +1388,7 @@ Release notes:
 			priceSummaryHeader.innerText = 'TOTAL PRICE:';
 			const priceSummary = document.createElement('td');
 			let priceSum = 0;
+			let priceErrors = 0;
 			priceSummary.innerText = 'EUR ...';
 			priceSummaryRow.appendChild(priceSummaryHeader);
 			priceSummaryRow.appendChild(priceSummary);
@@ -1503,11 +1504,14 @@ Release notes:
                             thElem => thElem.innerText === 'Cennik'
                         ).nextElementSibling;
                         const price = priceRow.innerText.trim();
+						const validPrice = price && price != '' && price != 'EUR 0.00';
                         priceSpan.innerText = price;
 					//	console.log('price', price, Number(price.replace('EUR ', '')), priceSum, priceSum + Number(price.replace('EUR ', '')));
-						priceSum += price ? Number(price.replace('EUR ', '').replace(',','')) : 0;
-						priceSummary.innerText = 'EUR ' + round(priceSum, 2);
-                        if (!price) {
+						priceSum += validPrice ? Number(price.replace('EUR ', '').replace(',','')) : 0;
+						priceErrors += validPrice ? 0 : 1;
+						const priceSumReadable = round(priceSum, 2);
+						priceSummary.innerText = `EUR ${priceSumReadable}${priceErrors > 0 ? ` (+${priceErrors} errors)` : ''}`;
+                        if (!validPrice) {
                             const amazonSiteUrl = inventoryRow.getElementsByTagName('td')[11].getElementsByTagName('a')[0].getAttribute('href');
                             enqueuedXHR({
                                 method: 'GET',
@@ -1530,7 +1534,7 @@ Release notes:
 						}
 						weightSum += weight ? weight : 0;
 						const weightSumReadable = round(weightSum, 2);
-						weightSummary.innerText = weightErrors > 0 ? `${weightSumReadable} kg (${weightErrors} errors)` : `${weightSumReadable} kg`;
+						weightSummary.innerText = `${weightSumReadable} kg${weightErrors > 0 ? ` (+${weightErrors} errors)` : ''}`;
                     }
                 });
                 enqueuedXHR({
