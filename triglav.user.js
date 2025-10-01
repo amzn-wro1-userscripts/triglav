@@ -11,6 +11,11 @@
 // @downloadURL  https://amazon.eitho.fun/triglav.user.js
 // ==/UserScript==
 
+/*
+	Chcesz coś tu zmienić, albo dodać nową funkcję?
+	Nie zmieniaj tylko u siebie, zrób pull request na GitHubie: 
+	https://github.com/amzn-wro1-userscripts/triglav
+*/
 
 /*
 Release notes:
@@ -36,6 +41,9 @@ Release notes:
 
 1.12.6 - 2025.04.11 - xdaaugus
 - added container total weight row
+
+1.12.7 - 2025.10.01 - xdaaugus
+- added polish marketplace to PanDash hazmat info
 */
 
 ;
