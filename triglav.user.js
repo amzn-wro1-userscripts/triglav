@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Triglav
 // @namespace    http://tampermonkey.net/
-// @version      1.12.6
+// @version      1.12.7
 // @description  ♿️♿️♿️
 // @author       wojnarkw, edited by xdaaugus and sitarsk
 // @match        *://fcresearch-eu.aka.amazon.com/*/results?s=*
@@ -43,7 +43,7 @@ Release notes:
     'use strict';
     // console.log(foo);
     //====================KONFIGURACJA===================
-    const marketPlaces = 'DE';
+    const pandashMarketPlaces = 'PL,DE';
     const fulfillmentCenter = 'WRO1';
     const customersReturnSortingCode = 'WRO1_GradingSorting';
     const unsellableContainer = 'tsTRLIQN01';
@@ -315,9 +315,9 @@ Release notes:
     //=====================PanDash info==================
     const repetitionLimit = 5;
     const fetchPandashInfo = function (asin, repetition) {
-        const pandashRequestData = 'language=EN&source=retail-rbs&marketPlaces=' + marketPlaces +
+        const pandashRequestData = 'language=EN&source=retail-rbs&marketPlaces=' + pandashMarketPlaces +
               '&asins=' + asin + '&sidx=product.asin&rows=99999&page=1&sord=desc' +
-              '&isExportOnly=FALSE&fileName=' + userLogin + '_retail-rbs_EN_2021917232049335&fc=&pandashservice='
+              '&isExportOnly=FALSE&fileName=' + userLogin + '_retail-rbs_default_202510173052962&fc=&pandashservice='
         GM.xmlHttpRequest({
             method: 'POST',
             url: 'https://pandash.amazon.com/GridServlet',
@@ -328,16 +328,27 @@ Release notes:
             onload: function(resp) {
                 try {
                     const responseObj = JSON.parse(resp.response);
-                    const hazmatMessage = document.createElement('p');
+                    const hazmatMessageContainer = document.createElement('div');
+					hazmatMessageContainer.innerHTML = '<p class="title" style="font-weight: bold; margin-bottom: 0.3em;">Hazmat info - PanDash</p>';
                     if (responseObj.rows) {
-                        const hazmatLevel = responseObj.rows[0].level;
-                        hazmatMessage.innerHTML = 'Hazmat level (PanDash - ' + marketPlaces + '):<br>' + hazmatLevel +
-                            '<span style="font-size: 0.8em;"> (' + responseObj.rows[0].dropZone + ')</span>';
+						for (const row of responseObj.rows) {
+							const hazmatLevel = row.level;
+							const hazmatMessage = document.createElement('p');
+							hazmatMessage.style.marginBottom = '0';
+							hazmatMessage.innerHTML = `<span style='font-weight: bold;'>${row.mp}:</span> ${hazmatLevel}`;
+							if (row.dropZone) hazmatMessage.innerHTML += ` <span style='font-size: 0.8em;'>(${row.dropZone})</span>`;
+							if (row.raMessageId && row.hazmat_exception) {
+								hazmatMessage.innerHTML += `<br><span style="display: block; color: red; font-style: oblique; font-size: 75%; margin-top: -0.3em;">${row.raMessageId} / ${row.hazmat_exception}</span>`;
+							}
+							hazmatMessageContainer.appendChild(hazmatMessage);
+						}
                     } else {
                         console.log(responseObj, asin)
-                        hazmatMessage.innerHTML = 'Login to Midway to discover hazmat level'
+						const hazmatMessage = document.createElement('p');
+                        hazmatMessage.innerHTML = 'Login to Midway to discover hazmat level';
+						hazmatMessageContainer.appendChild(hazmatMessage);
                     }
-                    triglavLog.appendChild(hazmatMessage);
+                    triglavLog.appendChild(hazmatMessageContainer);
                 } catch(er) {
                     if (repetition <= repetitionLimit) fetchPandashInfo(asin, repetition+1)
                 }
